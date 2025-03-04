@@ -4,6 +4,7 @@ import signupRoute from './routes/signup'
 import cors from './middlewares/cors';
 import dotenv from 'dotenv'
 import path from 'path';
+import accountRoute from './routes/account'
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
@@ -14,6 +15,7 @@ app.use(cors);
 app.use(sessionMiddleware)
 
 app.use(signupRoute);
+app.use(accountRoute);
 
 
 app.disable('x-powered-by');

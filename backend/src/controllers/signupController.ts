@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { validateSignupDetails } from "../utility/signupValidation";
+import { validateSignupDetails } from "../utility/zodValidation";
 import prisma from "../database/prisma/prismaInstance";
 import { hashPassword } from "../utility/passwordHash";
 

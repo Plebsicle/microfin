@@ -4,7 +4,7 @@ import { redisCluster } from "../config/redis/redis";
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const redisStore = new RedisStore({
   client: redisCluster,
@@ -13,7 +13,7 @@ const redisStore = new RedisStore({
 
 const sessionMiddleware = session({
   store: redisStore,
-  secret: "plebsicle",
+  secret: process.env.SESSION_SECRET as string,
   name: "sessionId",
   resave: false,
   saveUninitialized: false,
