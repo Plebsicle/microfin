@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import generateAccountNumber from '../utility/accountGeneration'
+import {generateAccountNumber} from '../utility/accountGeneration'
 import prisma from "../database/prisma/prismaInstance";
 
 

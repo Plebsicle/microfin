@@ -29,8 +29,9 @@ model Account {
 
 model Transaction {
   id              String   @id @default(cuid())
-  type            TransactionType
+  type            TransactionType 
   amount          Decimal
+  status          TransactionStatus @default(PENDING)
   senderAccountId String?  // Null if it's a deposit (money added to account)
   senderAccount   Account? @relation("SenderAccount", fields: [senderAccountId], references: [id])
   receiverAccountId String? // Null if it's a withdrawal (money removed from account)
@@ -42,4 +43,10 @@ enum TransactionType {
   DEPOSIT
   WITHDRAWAL
   TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }

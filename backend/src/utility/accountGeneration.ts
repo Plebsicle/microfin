@@ -5,4 +5,11 @@ function generateAccountNumber(): string {
     return numericAccountNumber;
 }
 
-export default generateAccountNumber
+
+
+function generateTransactionId() : string {
+    const numericAccountNumber = uuidv4().replace(/\D/g, '').slice(0,25);
+    return numericAccountNumber;
+}
+
+export {generateAccountNumber,generateTransactionId};
