@@ -14,18 +14,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hashPassword = hashPassword;
 exports.comparePassword = comparePassword;
-const bcrypt_1 = __importDefault(require("bcrypt"));
-const saltRounds = 12;
+const argon2_1 = __importDefault(require("argon2"));
 function hashPassword(password) {
     return __awaiter(this, void 0, void 0, function* () {
-        const salt = yield bcrypt_1.default.genSalt(saltRounds);
-        const hashedPassword = yield bcrypt_1.default.hash(password, salt);
-        return hashedPassword;
+        return yield argon2_1.default.hash(password, {
+            type: argon2_1.default.argon2id,
+            memoryCost: 4096, // Memory usage (higher = more secure)
+            timeCost: 3, // Number of iterations
+            parallelism: 1 // Threads (higher = faster)
+        });
     });
 }
 function comparePassword(password, hashedPassword) {
     return __awaiter(this, void 0, void 0, function* () {
-        const match = yield bcrypt_1.default.compare(password, hashedPassword);
-        return match;
+        return yield argon2_1.default.verify(hashedPassword, password);
     });
 }

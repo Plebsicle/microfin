@@ -13,24 +13,31 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const accountGeneration_1 = require("../utility/accountGeneration");
-const prismaInstance_1 = __importDefault(require("../database/prisma/prismaInstance"));
+const db_1 = __importDefault(require("../database/db"));
+const cache_service_1 = require("../config/redis/cache.service");
 function accountController(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!req.session.user) {
-            res.status(401).json({ message: "user not logged in " });
+            res.status(401).json({ message: "User not logged in" });
             return;
         }
         const newAccountNumber = (0, accountGeneration_1.generateAccountNumber)();
-        const newAccount = yield prismaInstance_1.default.account.create({
-            data: {
-                accountNumber: newAccountNumber,
-                userId: req.session.user.id
-            }
-        });
-        res.status(200).json({ message: "New Account Created Succesfully",
-            accountNumber: newAccount.accountNumber, balance: newAccount.balance
-        });
-        return;
+        try {
+            const query = `INSERT INTO "Account" (accountNumber, userId) VALUES ($1, $2) RETURNING accountNumber, balance`;
+            const values = [newAccountNumber, req.session.user.id];
+            const result = yield db_1.default.query(query, values);
+            const newAccount = result.rows[0];
+            res.status(200).json({
+                message: "New Account Created Successfully",
+                accountNumber: newAccount.accountNumber,
+                balance: newAccount.balance
+            });
+            (0, cache_service_1.updateAccountCache)(newAccount.accountNumber);
+        }
+        catch (error) {
+            console.error("Error creating new account:", error);
+            res.status(500).json({ message: "Internal Server Error" });
+        }
     });
 }
 exports.default = accountController;

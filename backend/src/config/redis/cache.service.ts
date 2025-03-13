@@ -1,5 +1,11 @@
-import { redisCluster } from './redis'
+import { getRedisCluster } from './redis'
 import prisma from '../../database/prisma/prismaInstance';
+
+let redisCluster: any;
+
+(async () => {
+  redisCluster = await getRedisCluster();
+})();
 
 export const getAccountFromCache = async (accountNumber: string) => {
     const cachedData = await redisCluster.get(`account:${accountNumber}`);

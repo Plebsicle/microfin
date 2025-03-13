@@ -10,33 +10,42 @@ datasource db {
 model User {
   id        String    @id @default(cuid())
   name      String
-  email     String    @unique
+  email     String    @unique // Already creates an index
   password  String
   accounts  Account[]
   createdAt DateTime  @default(now())
+  
+  // No additional indexes needed
 }
 
 model Account {
   id            String        @id @default(cuid())
-  accountNumber String        @unique 
+  accountNumber String        @unique // Already creates an index
   balance       Decimal       @default(0.00)
   userId        String
   user          User          @relation(fields: [userId], references: [id])
   transactionsSent    Transaction[] @relation("SenderAccount")
   transactionsReceived Transaction[] @relation("ReceiverAccount")
   createdAt     DateTime      @default(now())
+  
+  @@index([userId]) // Keep this one as it's used for lookups
 }
 
 model Transaction {
+  // Minimize indexes on write-heavy table
   id              String   @id @default(cuid())
-  type            TransactionType 
+  type            TransactionType
   amount          Decimal
   status          TransactionStatus @default(PENDING)
-  senderAccountId String?  // Null if it's a deposit (money added to account)
+  senderAccountId String?
   senderAccount   Account? @relation("SenderAccount", fields: [senderAccountId], references: [id])
-  receiverAccountId String? // Null if it's a withdrawal (money removed from account)
+  receiverAccountId String?
   receiverAccount   Account? @relation("ReceiverAccount", fields: [receiverAccountId], references: [id])
   createdAt       DateTime @default(now())
+  
+  // Only keep the most critical indexes for reporting queries
+  @@index([status, createdAt]) // Combined index for status reports
+  // No indexes on the FK fields to keep writes fast
 }
 
 enum TransactionType {

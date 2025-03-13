@@ -15,15 +15,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateAccountCache = exports.getAccountFromCache = void 0;
 const redis_1 = require("./redis");
 const prismaInstance_1 = __importDefault(require("../../database/prisma/prismaInstance"));
+let redisCluster;
+(() => __awaiter(void 0, void 0, void 0, function* () {
+    redisCluster = yield (0, redis_1.getRedisCluster)();
+}))();
 const getAccountFromCache = (accountNumber) => __awaiter(void 0, void 0, void 0, function* () {
-    const cachedData = yield redis_1.redisCluster.get(`account:${accountNumber}`);
+    const cachedData = yield redisCluster.get(`account:${accountNumber}`);
     if (cachedData)
         return JSON.parse(cachedData);
     const account = yield prismaInstance_1.default.account.findUnique({
         where: { accountNumber }
     });
     if (account) {
-        yield redis_1.redisCluster.set(`account:${accountNumber}`, JSON.stringify(account), 'EX', 300); // Cache for 5 minutes
+        yield redisCluster.set(`account:${accountNumber}`, JSON.stringify(account), 'EX', 300); // Cache for 5 minutes
     }
     return account;
 });
@@ -33,7 +37,7 @@ const updateAccountCache = (accountNumber) => __awaiter(void 0, void 0, void 0, 
         where: { accountNumber }
     });
     if (updatedAccount) {
-        yield redis_1.redisCluster.set(`account:${accountNumber}`, JSON.stringify(updatedAccount), 'EX', 300);
+        yield redisCluster.set(`account:${accountNumber}`, JSON.stringify(updatedAccount), 'EX', 300);
     }
 });
 exports.updateAccountCache = updateAccountCache;

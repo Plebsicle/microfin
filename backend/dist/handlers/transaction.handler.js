@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.processTransaction = void 0;
-const prismaInstance_1 = __importDefault(require("../database/prisma/prismaInstance"));
+const db_1 = __importDefault(require("../database/db"));
 const cache_service_1 = require("../config/redis/cache.service");
 const transaction_service_1 = require("../config/kafka/transaction.service");
 const processTransaction = (transaction) => __awaiter(void 0, void 0, void 0, function* () {
@@ -34,85 +34,66 @@ const processTransaction = (transaction) => __awaiter(void 0, void 0, void 0, fu
 exports.processTransaction = processTransaction;
 function processWithdrawal(data) {
     return __awaiter(this, void 0, void 0, function* () {
+        const client = yield db_1.default.connect();
         try {
-            yield prismaInstance_1.default.$transaction((prisma) => __awaiter(this, void 0, void 0, function* () {
-                yield prisma.account.update({
-                    where: { accountNumber: data.accountNumber },
-                    data: { balance: { decrement: data.amount } }
-                });
-                yield prisma.transaction.create({
-                    data: {
-                        id: data.transactionId,
-                        type: 'WITHDRAWAL',
-                        amount: data.amount,
-                        senderAccountId: data.accountId,
-                        status: 'COMPLETED',
-                    }
-                });
-            }));
+            yield client.query('BEGIN');
+            yield client.query('UPDATE "Account" SET balance = balance - $1 WHERE accountNumber = $2', [data.amount, data.accountNumber]);
+            yield client.query('INSERT INTO "Transaction" (id, type, amount, "senderAccountId", status) VALUES ($1, $2, $3, $4, $5)', [data.transactionId, 'WITHDRAWAL', data.amount, data.accountId, 'COMPLETED']);
+            yield client.query('COMMIT');
+            console.log(data.amount, 'Withdrew Successfully');
             yield (0, cache_service_1.updateAccountCache)(data.accountNumber);
         }
         catch (error) {
+            yield client.query('ROLLBACK');
             console.error('Error processing withdrawal:', error);
             yield (0, transaction_service_1.updateTransactionStatus)(data.transactionId, 'FAILED');
+        }
+        finally {
+            client.release();
         }
     });
 }
 function processDeposit(data) {
     return __awaiter(this, void 0, void 0, function* () {
+        const client = yield db_1.default.connect();
         try {
-            yield prismaInstance_1.default.$transaction((prisma) => __awaiter(this, void 0, void 0, function* () {
-                yield prisma.account.update({
-                    where: { accountNumber: data.accountNumber },
-                    data: { balance: { increment: data.amount } }
-                });
-                yield prisma.transaction.create({
-                    data: {
-                        id: data.transactionId,
-                        type: 'DEPOSIT',
-                        amount: data.amount,
-                        receiverAccountId: data.accountId,
-                        status: 'COMPLETED',
-                    }
-                });
-            }));
+            yield client.query('BEGIN');
+            yield client.query('UPDATE "Account" SET balance = balance + $1 WHERE accountNumber = $2', [data.amount, data.accountNumber]);
+            yield client.query('INSERT INTO "Transaction" (id, type, amount, "receiverAccountId", status) VALUES ($1, $2, $3, $4, $5)', [data.transactionId, 'DEPOSIT', data.amount, data.accountId, 'COMPLETED']);
+            yield client.query('COMMIT');
+            console.log(data.amount, 'Deposited Successfully');
             yield (0, cache_service_1.updateAccountCache)(data.accountNumber);
         }
         catch (error) {
+            yield client.query('ROLLBACK');
             console.error('Error processing deposit:', error);
             yield (0, transaction_service_1.updateTransactionStatus)(data.transactionId, 'FAILED');
+        }
+        finally {
+            client.release();
         }
     });
 }
 function processTransfer(data) {
     return __awaiter(this, void 0, void 0, function* () {
+        const client = yield db_1.default.connect();
         try {
-            yield prismaInstance_1.default.$transaction((prisma) => __awaiter(this, void 0, void 0, function* () {
-                yield prisma.account.update({
-                    where: { accountNumber: data.senderAccountNumber },
-                    data: { balance: { decrement: data.amount } }
-                });
-                yield prisma.account.update({
-                    where: { accountNumber: data.receiverAccountNumber },
-                    data: { balance: { increment: data.amount } }
-                });
-                yield prisma.transaction.create({
-                    data: {
-                        id: data.transactionId,
-                        type: 'TRANSFER',
-                        amount: data.amount,
-                        receiverAccountId: data.receiverAccountId,
-                        senderAccountId: data.senderAccountId,
-                        status: 'COMPLETED',
-                    }
-                });
-            }));
+            yield client.query('BEGIN');
+            yield client.query('UPDATE "Account" SET balance = balance - $1 WHERE accountNumber = $2', [data.amount, data.senderAccountNumber]);
+            yield client.query('UPDATE "Account" SET balance = balance + $1 WHERE accountNumber = $2', [data.amount, data.receiverAccountNumber]);
+            yield client.query('INSERT INTO "Transaction" (id, type, amount, "senderAccountId", "receiverAccountId", status) VALUES ($1, $2, $3, $4, $5, $6)', [data.transactionId, 'TRANSFER', data.amount, data.senderAccountId, data.receiverAccountId, 'COMPLETED']);
+            yield client.query('COMMIT');
+            console.log(data.amount, 'Transferred Successfully');
             yield (0, cache_service_1.updateAccountCache)(data.senderAccountNumber);
             yield (0, cache_service_1.updateAccountCache)(data.receiverAccountNumber);
         }
         catch (error) {
+            yield client.query('ROLLBACK');
             console.error('Error processing transfer:', error);
             yield (0, transaction_service_1.updateTransactionStatus)(data.transactionId, 'FAILED');
+        }
+        finally {
+            client.release();
         }
     });
 }

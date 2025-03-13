@@ -37,17 +37,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const node_cluster_1 = __importDefault(require("node:cluster"));
-const path_1 = __importDefault(require("path"));
-require("ts-node/register"); // Ensure TypeScript files can be executed
-const numWorkers = 15; // Use the number of available CPU cores
+const os_1 = __importDefault(require("os"));
+require("ts-node/register");
+const numWorkers = os_1.default.cpus().length;
 if (node_cluster_1.default.isPrimary) {
-    console.log(`Primary process ${process.pid} is running`);
+    console.log(`Primary process ${process.pid} is running with ${numWorkers} workers`);
     // Fork workers
     for (let i = 0; i < numWorkers; i++) {
         node_cluster_1.default.fork();
     }
-    node_cluster_1.default.on("exit", (worker, code, signal) => {
-        console.log(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}, spawning a new one...`);
+    node_cluster_1.default.on("exit", (worker) => {
+        console.log(`Worker ${worker.process.pid} died, restarting...`);
         node_cluster_1.default.fork();
     });
     node_cluster_1.default.on("online", (worker) => {
@@ -56,10 +56,8 @@ if (node_cluster_1.default.isPrimary) {
 }
 else {
     console.log(`Worker ${process.pid} started`);
-    const serverPath = path_1.default.join(__dirname, "../index.js"); // Adjust path if necessary
-    console.log(`Attempting to load server from: ${serverPath}`);
-    Promise.resolve(`${serverPath}`).then(s => __importStar(require(s))).then((serverModule) => {
-        console.log(`Server module loaded successfully by worker ${process.pid}`);
+    Promise.resolve().then(() => __importStar(require("../index.js"))).then(() => {
+        console.log(`Worker ${process.pid} is now handling requests`);
     })
         .catch((err) => {
         console.error(`Failed to load server module: ${err.message}`);

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const prismaInstance_1 = __importDefault(require("../database/prisma/prismaInstance"));
+const db_1 = __importDefault(require("../database/db"));
 const zodValidation_1 = require("../utility/zodValidation");
 const passwordHash_1 = require("../utility/passwordHash");
 function signinController(req, res) {
@@ -23,30 +23,35 @@ function signinController(req, res) {
             res.status(400).json({ message: "Invalid Input" });
             return;
         }
-        const userExist = yield prismaInstance_1.default.user.findUnique({
-            where: { email }
-        });
-        if (!userExist) {
-            res.status(400).json({ message: "Signup First" });
-            return;
-        }
-        const passwordValidation = yield (0, passwordHash_1.comparePassword)(password, userExist.password);
-        if (!passwordValidation) {
-            res.status(401).json({ message: "Invalid Password" });
-            return;
-        }
-        req.session.user = { id: userExist.id, details: { name: userExist.name, email } };
-        console.log("Session before saving:", req.session);
-        req.session.save((err) => {
-            if (err) {
-                console.error("❌ Session save error:", err);
-                res.status(500).json({ message: "Session error" });
+        try {
+            const userExistQuery = "SELECT * FROM \"User\" WHERE email = $1";
+            const { rows: users } = yield db_1.default.query(userExistQuery, [email]);
+            const userExist = users[0];
+            if (!userExist) {
+                res.status(400).json({ message: "Signup First" });
                 return;
             }
-            console.log("✅ Session saved:", req.session);
-            res.status(200).json({ message: "User Signed In Successfully" });
-            return;
-        });
+            const passwordValidation = yield (0, passwordHash_1.comparePassword)(password, userExist.password);
+            if (!passwordValidation) {
+                res.status(401).json({ message: "Invalid Password" });
+                return;
+            }
+            req.session.user = { id: userExist.id, details: { name: userExist.name, email } };
+            console.log("Session before saving:", req.session);
+            req.session.save((err) => {
+                if (err) {
+                    console.error("❌ Session save error:", err);
+                    res.status(500).json({ message: "Session error" });
+                    return;
+                }
+                console.log("✅ Session saved:", req.session);
+                res.status(200).json({ message: "User Signed In Successfully" });
+            });
+        }
+        catch (error) {
+            console.error("❌ Database query error:", error);
+            res.status(500).json({ message: "Internal server error" });
+        }
     });
 }
 exports.default = signinController;

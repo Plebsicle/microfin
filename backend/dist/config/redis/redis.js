@@ -12,14 +12,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.redisCluster = void 0;
+exports.getRedisCluster = getRedisCluster;
+exports.releaseRedisCluster = releaseRedisCluster;
 const ioredis_1 = __importDefault(require("ioredis"));
-// Singleton instance
-let redisClusterInstance = null;
-let isConnected = false;
-function getRedisCluster() {
-    if (!redisClusterInstance) {
-        redisClusterInstance = new ioredis_1.default.Cluster([
+const generic_pool_1 = __importDefault(require("generic-pool"));
+// Create a Redis Cluster connection pool
+const redisClusterPool = generic_pool_1.default.createPool({
+    create: () => __awaiter(void 0, void 0, void 0, function* () {
+        return new ioredis_1.default.Cluster([
             { host: "localhost", port: 6379 }, // Master 1
             { host: "localhost", port: 6380 }, // Master 2 
             { host: "localhost", port: 6381 }, // Master 3
@@ -28,8 +28,6 @@ function getRedisCluster() {
             redisOptions: {
                 connectTimeout: 10000,
             },
-            // This is critical - it tells ioredis how to map the internal IPs that Redis nodes announce
-            // to the localhost ports you can actually connect to
             natMap: {
                 "192.168.1.2:6379": { host: "localhost", port: 6379 },
                 "192.168.1.3:6379": { host: "localhost", port: 6380 },
@@ -53,29 +51,37 @@ function getRedisCluster() {
                 return Math.min(100 + times * 200, 2000);
             }
         });
-        redisClusterInstance.on("connect", () => {
-            if (!isConnected) {
-                console.log("✅ Connected to Redis Cluster");
-                isConnected = true;
-            }
-        });
-        redisClusterInstance.on("error", (err) => {
-            console.error("❌ Redis Cluster Error:", err);
-        });
-        redisClusterInstance.on("node error", (err) => {
-            console.error("🚨 Redis Node Error:", err);
-        });
-        redisClusterInstance.on("end", () => {
-            console.error("❌ Redis Cluster Connection Lost");
-            isConnected = false;
-        });
-    }
-    return redisClusterInstance;
+    }),
+    destroy: (client) => __awaiter(void 0, void 0, void 0, function* () {
+        yield client.quit();
+    }),
+    validate: (client) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            yield client.ping();
+            return true;
+        }
+        catch (err) {
+            return false;
+        }
+    }),
+}, {
+    min: 100, // Minimum number of connections in the pool
+    max: 250, // Maximum number of connections in the pool
+    idleTimeoutMillis: 30000, // Close idle connections after 30s
+});
+function getRedisCluster() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield redisClusterPool.acquire();
+    });
 }
-const redisCluster = getRedisCluster();
-exports.redisCluster = redisCluster;
+function releaseRedisCluster(client) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield redisClusterPool.release(client);
+    });
+}
 // ✅ Debug: Test Redis Write & Read
 (() => __awaiter(void 0, void 0, void 0, function* () {
+    const redisCluster = yield getRedisCluster();
     try {
         yield redisCluster.set("test_key", "test_value", "EX", 60);
         const value = yield redisCluster.get("test_key");
@@ -83,5 +89,8 @@ exports.redisCluster = redisCluster;
     }
     catch (error) {
         console.error("❌ Redis Write Error:", error);
+    }
+    finally {
+        yield releaseRedisCluster(redisCluster);
     }
 }))();

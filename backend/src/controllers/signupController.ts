@@ -1,46 +1,79 @@
 import { Request, Response } from "express";
+import pool from "../database/db"; // Import pg pool
 import { validateSignupDetails } from "../utility/zodValidation";
-import prisma from "../database/prisma/prismaInstance";
 import { hashPassword } from "../utility/passwordHash";
+import fs from "fs";
+import path from "path";
 
-async function signupController(req: Request, res: Response){
-    const {name , email , password} = req.body;
+// const logFilePath = path.join(__dirname, "../logs/signup_timing.log");
+
+// function logToFile(message: string) {
+//     fs.appendFileSync(logFilePath, `${new Date().toISOString()} - ${message}\n`);
+// }
+
+async function signupController(req: Request, res: Response) {
+    //const startTime = Date.now();
+
+    const { name, email, password } = req.body;
     if (!name || !email || !password) {
-        res.status(400).json({ message: "All fields (name, email, password) are required" });
+        //logToFile("❌ Request missing required fields.");
+        res.status(400).json({ message: "All fields are required" });
         return;
     }
-    const validationResult = validateSignupDetails(name , email,password);
-    
-    if(!validationResult) {res.status(400).json({message : "Invalid Input"}); return;}
 
-    const userExist = await Promise.race([
-        prisma.user.findUnique({ where: { email } }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error("DB Timeout")), 5000))
-    ]);
+    // Validate Input
+    // const validationStart = Date.now();
+    const validationResult = validateSignupDetails(name, email, password);
+    //logToFile(`🔍 Validation Time: ${Date.now() - validationStart}ms`);
 
-    if(userExist) {res.status(400).json({message : "Email in Use"}); return;}
-    const hashedPassword = await hashPassword(password);
+    if (!validationResult) {
+        //logToFile("❌ Invalid input provided.");
+        res.status(400).json({ message: "Invalid Input" });
+        return;
+    }
+    let client;
+    try {
+        // Hash Password
+        //const hashingStart = Date.now();
+        const hashedPassword = await hashPassword(password);
+        //logToFile(`🔑 Hashing Password Time: ${Date.now() - hashingStart}ms`);
 
-    const newUser = await prisma.user.create({
-        data: {
-            name,
-            email,
-            password: hashedPassword
-        }
-    });
+        // Insert User into DB
+        //const createUserStart = Date.now();
+        client = await pool.connect();
+        await client.query("BEGIN");
 
-    (req.session as any).user = {id : newUser.id , details : {name , email} };
-    console.log("Session before saving:", req.session);
-    req.session.save((err) => {
-        if (err) {
-            console.error("❌ Session save error:", err);
-            res.status(500).json({ message: "Session error" });
+        const result = await client.query(
+            `INSERT INTO "User" (name, email, password) 
+             VALUES ($1, $2, $3) 
+             ON CONFLICT (email) DO NOTHING 
+             RETURNING id`,
+            [name, email, hashedPassword]
+        );
+
+        await client.query("COMMIT");
+        client.release();
+        //logToFile(`📝 Create User in DB Time: ${Date.now() - createUserStart}ms`);
+
+        if (result.rowCount === 0) {
+            //logToFile("⚠️ Email already in use.");
+            res.status(400).json({ message: "Email in Use" });
             return;
         }
-        console.log("✅ Session saved:", req.session);
-        res.status(200).json({ message: "User Created Successfully" });
-        return ;
-    });
+
+        // Set session asynchronously
+        (req.session as any).user = { id: result.rows[0].id, details: { name, email } };
+        await new Promise(resolve => req.session.save(resolve));
+
+        //logToFile(`✅ Total Signup Time: ${Date.now() - startTime}ms`);
+        const response = JSON.stringify({ message: "User Created Successfully" });
+        res.setHeader('Content-Length', Buffer.byteLength(response));
+        res.status(200).send(response);
+    } catch (error: any) {
+        //logToFile(`❌ Database Error: ${error.message}`);
+        console.error("❌ Database Error:", error);
+        res.status(500).json({ message: "Something went wrong" });
+    }
 }
 
 export default signupController;
