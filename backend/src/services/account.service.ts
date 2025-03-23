@@ -1,4 +1,3 @@
-import prisma from '../database/prisma/prismaInstance';
 import { getAccountFromCache} from '../config/redis/cache.service';
 
 export const verifyWithdrawalEligibility = async (accountNumber: string, amount: number): Promise<{

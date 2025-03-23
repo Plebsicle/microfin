@@ -23,8 +23,7 @@ export const initializeConsumer = async (): Promise<Consumer> => {
     eachMessage: async ({ topic, partition, message }) => {
       try {
         const transactionData = JSON.parse(message.value!.toString());
-        console.log(`Processing transaction: ${transactionData.transactionId}`);
-        
+        //console.log(`Processing transaction: ${transactionData.transactionId}`);
         // Process the transaction
         await processTransaction(transactionData);
       } catch (error) {

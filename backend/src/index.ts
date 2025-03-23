@@ -9,9 +9,6 @@ import { initializeProducer, disconnectProducer } from "./config/kafka/producer"
 import { initializeConsumer, disconnectConsumer } from "./config/kafka/consumer";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-// const BACKLOG = 65535;
-
-//process.env.UV_THREADPOOL_SIZE = String(Math.max(8, require("os").cpus().length * 2));
 
 const PORT = Number(process.env.PORT) || 8000;
 
@@ -53,9 +50,9 @@ async function gracefulShutdown() {
 }
 
 // ✅ Ensure Kafka starts if needed
-// initializeKafka();
-// process.on("SIGTERM", gracefulShutdown);
-// process.on("SIGINT", gracefulShutdown);
+initializeKafka();
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
 
 // Disable "X-Powered-By" header for security
 app.disable("x-powered-by");

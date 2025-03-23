@@ -1,19 +1,13 @@
-import { getRedisCluster } from './redis'
-import prisma from '../../database/prisma/prismaInstance';
+import { redisCluster } from './redis';
+import  pool  from '../../database/db';
 
-let redisCluster: any;
-
-(async () => {
-  redisCluster = await getRedisCluster();
-})();
-
-export const getAccountFromCache = async (accountNumber: string) => {
+export const getAccountFromCache = async (accountNumber : any) => {
     const cachedData = await redisCluster.get(`account:${accountNumber}`);
     if (cachedData) return JSON.parse(cachedData);
 
-    const account = await prisma.account.findUnique({
-        where: { accountNumber }
-    });
+    const query = 'SELECT * FROM "Account" WHERE accountNumber = $1';
+    const { rows } = await pool.query(query, [accountNumber]);
+    const account = rows[0];
 
     if (account) {
         await redisCluster.set(`account:${accountNumber}`, JSON.stringify(account), 'EX', 300); // Cache for 5 minutes
@@ -21,11 +15,20 @@ export const getAccountFromCache = async (accountNumber: string) => {
     return account;
 };
 
-export const updateAccountCache = async (accountNumber: string) => {
-    const updatedAccount = await prisma.account.findUnique({
-        where: { accountNumber }
-    });
+export const updateAccountCache = async (accountNumber: string, newBalance?: number) => {
+    const accountKey = `account:${accountNumber}`;
+    const cachedAccount = await redisCluster.get(accountKey);
+    if (cachedAccount) {
+        const accountData = JSON.parse(cachedAccount);
+        accountData.balance = newBalance; 
+        await redisCluster.set(accountKey, JSON.stringify(accountData), 'EX', 300);
+        return;
+    }
+    const query = 'SELECT * FROM "Account" WHERE accountNumber = $1';
+    const { rows } = await pool.query(query, [accountNumber]);
+    const updatedAccount = rows[0];
+
     if (updatedAccount) {
-        await redisCluster.set(`account:${accountNumber}`, JSON.stringify(updatedAccount), 'EX', 300);
+        await redisCluster.set(accountKey, JSON.stringify(updatedAccount), 'EX', 300);
     }
 };

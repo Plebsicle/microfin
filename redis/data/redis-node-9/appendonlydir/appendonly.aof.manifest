@@ -1,2 +1,0 @@
-file appendonly.aof.27.base.rdb seq 27 type b
-file appendonly.aof.27.incr.aof seq 27 type i

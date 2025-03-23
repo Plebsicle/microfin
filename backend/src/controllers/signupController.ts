@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import pool from "../database/db"; // Import pg pool
 import { validateSignupDetails } from "../utility/zodValidation";
 import { hashPassword } from "../utility/passwordHash";
-import fs from "fs";
-import path from "path";
+// import fs from "fs";
+// import path from "path";
 
 // const logFilePath = path.join(__dirname, "../logs/signup_timing.log");
 
@@ -12,8 +12,7 @@ import path from "path";
 // }
 
 async function signupController(req: Request, res: Response) {
-    //const startTime = Date.now();
-
+    const startTime = Date.now();
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
         //logToFile("❌ Request missing required fields.");
@@ -22,7 +21,7 @@ async function signupController(req: Request, res: Response) {
     }
 
     // Validate Input
-    // const validationStart = Date.now();
+    //const validationStart = Date.now();
     const validationResult = validateSignupDetails(name, email, password);
     //logToFile(`🔍 Validation Time: ${Date.now() - validationStart}ms`);
 
@@ -34,15 +33,14 @@ async function signupController(req: Request, res: Response) {
     let client;
     try {
         // Hash Password
-        //const hashingStart = Date.now();
+        const hashingStart = Date.now();
         const hashedPassword = await hashPassword(password);
         //logToFile(`🔑 Hashing Password Time: ${Date.now() - hashingStart}ms`);
 
         // Insert User into DB
-        //const createUserStart = Date.now();
+        const databaseInsertTime = Date.now();
         client = await pool.connect();
         await client.query("BEGIN");
-
         const result = await client.query(
             `INSERT INTO "User" (name, email, password) 
              VALUES ($1, $2, $3) 
@@ -50,21 +48,19 @@ async function signupController(req: Request, res: Response) {
              RETURNING id`,
             [name, email, hashedPassword]
         );
-
         await client.query("COMMIT");
         client.release();
-        //logToFile(`📝 Create User in DB Time: ${Date.now() - createUserStart}ms`);
-
+        //logToFile(`📝 Create in Database time ${Date.now() - databaseInsertTime}ms`);
         if (result.rowCount === 0) {
             //logToFile("⚠️ Email already in use.");
             res.status(400).json({ message: "Email in Use" });
             return;
         }
 
-        // Set session asynchronously
-        (req.session as any).user = { id: result.rows[0].id, details: { name, email } };
-        await new Promise(resolve => req.session.save(resolve));
-
+        //Set session asynchronously
+        (req.session as any).user = { id: result.rows[0].id , details: { name, email } };
+        // await new Promise(resolve => req.session.save(resolve));
+        // console.log(req.session.id);
         //logToFile(`✅ Total Signup Time: ${Date.now() - startTime}ms`);
         const response = JSON.stringify({ message: "User Created Successfully" });
         res.setHeader('Content-Length', Buffer.byteLength(response));

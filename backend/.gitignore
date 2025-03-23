@@ -1,4 +1,20 @@
-node_modules
+# Node modules (already ignored globally, but keeping it here for safety)
+node_modules/
+
 # Keep environment variables out of version control
 .env
-dist
+
+# Ignore build files
+dist/
+
+# Ignore test files
+src/tests/
+
+# Ignore diagnostic data
+.clinic/
+
+# Ignore logs
+src/logs/
+
+# Ignore Redis database files (make sure this is inside `backend/redis/`)
+redis/data/

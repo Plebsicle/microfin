@@ -2,6 +2,14 @@ import { Transaction } from '../config/kafka/transaction.model';
 import pool from '../database/db';
 import { updateAccountCache } from '../config/redis/cache.service';
 import { updateTransactionStatus } from '../config/kafka/transaction.service';
+import fs from "fs";
+import path from "path";
+
+const logFilePath = path.join(__dirname, "../logs/signup_timing.log");
+
+function logToFile(message: string) {
+    fs.appendFileSync(logFilePath, `${new Date().toISOString()} - ${message}\n`);
+}
 
 export const processTransaction = async (transaction: Transaction): Promise<void> => {
   switch (transaction.type) {
@@ -23,17 +31,15 @@ async function processWithdrawal(data: Transaction & { type: 'WITHDRAWAL' }) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-
     await client.query(
       'UPDATE "Account" SET balance = balance - $1 WHERE accountNumber = $2',
       [data.amount, data.accountNumber]
     );
 
     await client.query(
-      'INSERT INTO "Transaction" (id, type, amount, "senderAccountId", status) VALUES ($1, $2, $3, $4, $5)',
+      'INSERT INTO "Transaction" (id, type, amount, "senderaccountid", status) VALUES ($1, $2, $3, $4, $5)',
       [data.transactionId, 'WITHDRAWAL', data.amount, data.accountId, 'COMPLETED']
     );
-
     await client.query('COMMIT');
     console.log(data.amount, 'Withdrew Successfully');
     await updateAccountCache(data.accountNumber);
@@ -47,21 +53,24 @@ async function processWithdrawal(data: Transaction & { type: 'WITHDRAWAL' }) {
 }
 
 async function processDeposit(data: Transaction & { type: 'DEPOSIT' }) {
+  const DepositDatabaseTime = Date.now();
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
     await client.query(
-      'UPDATE "Account" SET balance = balance + $1 WHERE accountNumber = $2',
+      'EXPLAIN ANALYSE UPDATE "Account" SET balance = balance + $1 WHERE accountNumber = $2',
       [data.amount, data.accountNumber]
     );
 
     await client.query(
-      'INSERT INTO "Transaction" (id, type, amount, "receiverAccountId", status) VALUES ($1, $2, $3, $4, $5)',
+      'EXPLAIN ANALYZE INSERT INTO "Transaction" (id, type, amount, "receiveraccountid", status) VALUES ($1, $2, $3, $4, $5)',
       [data.transactionId, 'DEPOSIT', data.amount, data.accountId, 'COMPLETED']
     );
 
     await client.query('COMMIT');
+    logToFile(`Deposit Database times : ${Date.now() - DepositDatabaseTime}ms`);
+
     console.log(data.amount, 'Deposited Successfully');
     await updateAccountCache(data.accountNumber);
   } catch (error) {
@@ -89,7 +98,7 @@ async function processTransfer(data: Transaction & { type: 'TRANSFER' }) {
     );
 
     await client.query(
-      'INSERT INTO "Transaction" (id, type, amount, "senderAccountId", "receiverAccountId", status) VALUES ($1, $2, $3, $4, $5, $6)',
+      'INSERT INTO "Transaction" (id, type, amount, "senderaccountid", "receiveraccountid", status) VALUES ($1, $2, $3, $4, $5, $6)',
       [data.transactionId, 'TRANSFER', data.amount, data.senderAccountId, data.receiverAccountId, 'COMPLETED']
     );
 

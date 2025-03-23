@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "npx nodemon src/index.ts",
+    "dev": "node dist/workers/cluster",
+    "dev1": "PORT=8001 node dist/workers/cluster",
+    "dev2": "PORT=8002 node dist/workers/cluster",
+    "dev3": "PORT=8003 node dist/workers/cluster",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,7 +15,6 @@
   "type": "commonjs",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.3.1",
     "@types/express": "^5.0.0",
     "argon2": "^0.41.1",
     "bcrypt": "^5.1.1",
@@ -28,7 +30,6 @@
     "nodemon": "^3.1.9",
     "pg": "^8.14.0",
     "pm2": "^5.4.3",
-    "prisma": "^6.3.1",
     "tsc": "^2.0.4",
     "uuid": "^11.1.0",
     "zod": "^3.24.2"

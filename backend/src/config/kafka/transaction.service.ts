@@ -1,9 +1,7 @@
 import { getProducer } from './producer';
 import { FINANCIAL_TOPIC } from './kafka';
 import { Transaction } from './transaction.model';
-import prisma from '../../database/prisma/prismaInstance';
-import { TransactionStatus } from '@prisma/client';
-
+import  pool  from '../../database/db';
 
 export const publishTransaction = async (data: Transaction, key: string): Promise<boolean> => {
   try {
@@ -26,13 +24,10 @@ export const publishTransaction = async (data: Transaction, key: string): Promis
   }
 };
 
-
-export const updateTransactionStatus = async (transactionId: string, status: TransactionStatus): Promise<void> => {
+export const updateTransactionStatus = async (transactionId: string, status: string): Promise<void> => {
   try {
-    await prisma.transaction.update({
-      where: { id: transactionId },
-      data: { status }
-    });
+    const query = 'UPDATE "Transaction" SET status = $1 WHERE id = $2';
+    await pool.query(query, [status, transactionId]);
   } catch (error) {
     console.error('Error updating transaction status:', error);
   }
