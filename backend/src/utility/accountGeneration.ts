@@ -8,7 +8,7 @@ function generateAccountNumber(): string {
 
 
 function generateTransactionId() : string {
-    const numericAccountNumber = uuidv4().replace(/\D/g, '').slice(0,25);
+    const numericAccountNumber = uuidv4().replace(/\D/g, '').slice(0,12);
     return numericAccountNumber;
 }
 

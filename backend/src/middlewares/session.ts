@@ -20,7 +20,7 @@ const sessionMiddleware = session({
   cookie: {
     secure: false, // Secure in production
     httpOnly: true, // Prevent client-side access
-    maxAge: 1000 * 60 * 60, // 1 hour expiration
+    maxAge: 1000 * 60 * 30, // 1/2 hour expiration
   },
 });
 

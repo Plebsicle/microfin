@@ -23,23 +23,21 @@ export const initializeConsumer = async (): Promise<Consumer> => {
     eachMessage: async ({ topic, partition, message }) => {
       try {
         const transactionData = JSON.parse(message.value!.toString());
-        console.log(`Processing transaction: ${transactionData.transactionId}`);
-        
-        // Process the transaction
+        //console.log(`Processing transaction: ${transactionData.transactionId}`);
+        // Process transaction
         await processTransaction(transactionData);
       } catch (error) {
         console.error('Error processing Kafka message:', error);
-        // Could implement dead letter queue here
+        // Failed messages Queue
       }
     },
   });
   
   console.log('Kafka consumer started');
-  
   return consumer;
 };
 
-export const getConsumer = (): Consumer => {
+export const getConsumer = (): Consumer=>{
   if (!consumer) {
     throw new Error('Consumer not initialized');
   }

@@ -1,23 +1,5 @@
-import prisma from '../database/prisma/prismaInstance';
 import { getAccountFromCache} from '../config/redis/cache.service';
 
-export const verifyWithdrawalEligibility = async (accountNumber: string, amount: number): Promise<{
-  eligible: boolean;
-  account?: any;
-  message?: string;
-}> => {
-  const account = await getAccountFromCache(accountNumber);
-  
-  if (!account) {
-    return { eligible: false, message: "Account not found" };
-  }
-  
-  if (Number(account.balance) < amount) {
-    return { eligible: false, message: "Insufficient balance" };
-  }
-  
-  return { eligible: true, account };
-};
 
 export const verifyTransferEligibility = async (
   senderAccountNumber: string, 
@@ -44,6 +26,23 @@ export const verifyTransferEligibility = async (
   }
   
   return { eligible: true, senderAccount, receiverAccount };
+};
+
+export const verifyWithdrawalEligibility = async (accountNumber: string, amount: number): Promise<{
+  eligible: boolean;
+  account?: any;
+  message?: string;
+}> => {
+  const account = await getAccountFromCache(accountNumber);
+  
+  if (!account){
+    return { eligible: false, message: "Account not found" };
+  }
+  
+  if (Number(account.balance) < amount) {
+    return { eligible: false, message: "Insufficient balance" };
+  }
+  return { eligible: true,account};
 };
 
 export const verifyDepositEligibility = async (accountNumber: string): Promise<{

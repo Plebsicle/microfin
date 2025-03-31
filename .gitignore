@@ -1,0 +1,17 @@
+# Ignore all node_modules across the project
+**/node_modules/
+
+# Ignore all .env files across the project
+**/.env
+
+# Ignore all .vscode settings across the project
+.vscode/
+
+# Ignore Redis database files
+redis/data/
+
+# Ignore logs in any subproject
+**/logs/
+
+# Ignore Kafka-related temporary files (if applicable)
+kafka/data/

@@ -1,19 +1,19 @@
 import cluster from "node:cluster";
-import path from "path";
-import "ts-node/register"; // Ensure TypeScript files can be executed
+import os from "os";
+import "ts-node/register";
 
-const numWorkers = 15 // Use the number of available CPU cores
+const numWorkers = os.cpus().length; 
 
 if (cluster.isPrimary) {
-    console.log(`Primary process ${process.pid} is running`);
+    console.log(`Primary process ${process.pid} is running with ${numWorkers} workers`);
 
     // Fork workers
     for (let i = 0; i < numWorkers; i++) {
         cluster.fork();
     }
 
-    cluster.on("exit", (worker, code, signal) => {
-        console.log(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}, spawning a new one...`);
+    cluster.on("exit", (worker) => {
+        console.log(`Worker ${worker.process.pid} died, restarting...`);
         cluster.fork();
     });
 
@@ -22,13 +22,9 @@ if (cluster.isPrimary) {
     });
 } else {
     console.log(`Worker ${process.pid} started`);
-
-    const serverPath = path.join(__dirname, "../index.js"); // Adjust path if necessary
-    console.log(`Attempting to load server from: ${serverPath}`);
-
-    import(serverPath)
-        .then((serverModule) => {
-            console.log(`Server module loaded successfully by worker ${process.pid}`);
+    import("../index.js")
+        .then(() => {
+            console.log(`Worker ${process.pid} is now handling requests`);
         })
         .catch((err) => {
             console.error(`Failed to load server module: ${err.message}`);
