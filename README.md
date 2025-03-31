@@ -12,6 +12,9 @@ This project is a highly scalable financial application designed to handle high 
 - **Kafka for Sequential User Transactions:** Ensures that transactions are processed sequentially for each individual account number. This guarantees that operations such as deposits, withdrawals, and transfers are applied in the correct order for every account, preventing race conditions and ensuring accurate account balance updates even under heavy load.
 - **Nginx for Load Balancing:** Distributes incoming traffic across four servers with 16 workers in each for better load management.
 
+## Architecture Diagram
+![Microfin Architecture](backend/src/assets/microfin_architecture.png)
+
 ## Installation
 
 ### Prerequisites
