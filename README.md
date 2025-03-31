@@ -10,7 +10,7 @@ This project is a highly scalable financial application designed to handle high 
 - **PostgreSQL with PgBouncer:** Efficient database connection pooling for optimized query performance.
 - **Redis for Session Management & Caching:** Enhances performance by caching frequently accessed data.
 - **Kafka for Sequential User Transactions:** Ensures transactions are processed in a sequential and distributed manner.
-- **Nginx for Load Balancing:** Distributes incoming traffic across four servers for better load management.
+- **Nginx for Load Balancing:** Distributes incoming traffic across four servers with 16 workers in each for better load management.
 - **Efficient Data Handling:** Reduces latency and improves response times with caching and message queuing.
 
 ## Installation
