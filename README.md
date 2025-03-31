@@ -4,14 +4,13 @@
 
 This project is a highly scalable financial application designed to handle high loads efficiently. While its functionality is limited to basic financial tasks, the primary focus is on scalability and performance optimization. The architecture leverages PostgreSQL with PgBouncer for connection pooling, Redis, Kafka, and Nginx to ensure smooth operation under heavy traffic conditions.
 
-## Features
+## Key Architecture
 
 - **Scalability:** Built to handle high traffic and concurrent transactions.
 - **PostgreSQL with PgBouncer:** Efficient database connection pooling for optimized query performance.
 - **Redis for Session Management & Caching:** Enhances performance by caching frequently accessed data.
-- **Kafka for Sequential User Transactions:** Ensures transactions are processed in a sequential and distributed manner.
+- **Kafka for Sequential User Transactions:** Ensures that transactions are processed sequentially for each individual account number. This guarantees that operations such as deposits, withdrawals, and transfers are applied in the correct order for every account, preventing race conditions and ensuring accurate account balance updates even under heavy load.
 - **Nginx for Load Balancing:** Distributes incoming traffic across four servers with 16 workers in each for better load management.
-- **Efficient Data Handling:** Reduces latency and improves response times with caching and message queuing.
 
 ## Installation
 
@@ -68,12 +67,13 @@ npm run dev3 # Server 4
 
 The system has been stress-tested under high load conditions, ensuring:
 
-- **Efficient query performance** with PgBouncer reducing connection overhead.
-- **Seamless caching and session management** with Redis, leading to reduced response times.
-- **Reliable transaction processing** with Kafka ensuring sequential execution.
-- **Balanced traffic distribution** across four servers using Nginx.
+This project was stress-tested using **K6** to simulate high load conditions. The test focused on various scenarios, including:
 
-### Performance Benchmarks
+- **Account creation**
+- **User sign-ins**
+- **Deposits, withdrawals, and transfers**
+  
+The results showed optimal performance even under heavy traffic with 100% success rate for all transactions, as summarized in the performance benchmarks.
 
 ### Performance Benchmarks
 
@@ -95,10 +95,9 @@ The system has been stress-tested under high load conditions, ensuring:
 
 ## API endpoints
 
-/api/signup/
-/api/signin/
-/api/accountGeneration/
-/api/deposit/
-/api/withdraw/
-/api/transfer/
-
+- `/api/signup/`
+- `/api/signin/`
+- `/api/accountGeneration/`
+- `/api/deposit/`
+- `/api/withdraw/`
+- `/api/transfer/`
