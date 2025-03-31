@@ -15,7 +15,7 @@ async function signupController(req: Request, res: Response) {
     const startTime = Date.now();
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
-        //logToFile("❌ Request missing required fields.");
+        //logToFile("Request missing required fields.");
         res.status(400).json({ message: "All fields are required" });
         return;
     }
@@ -26,7 +26,7 @@ async function signupController(req: Request, res: Response) {
     //logToFile(`🔍 Validation Time: ${Date.now() - validationStart}ms`);
 
     if (!validationResult) {
-        //logToFile("❌ Invalid input provided.");
+        //logToFile("Invalid input provided.");
         res.status(400).json({ message: "Invalid Input" });
         return;
     }
@@ -35,7 +35,7 @@ async function signupController(req: Request, res: Response) {
         // Hash Password
         const hashingStart = Date.now();
         const hashedPassword = await hashPassword(password);
-        //logToFile(`🔑 Hashing Password Time: ${Date.now() - hashingStart}ms`);
+        //logToFile(`Hashing Password Time: ${Date.now() - hashingStart}ms`);
 
         // Insert User into DB
         const databaseInsertTime = Date.now();
@@ -52,7 +52,7 @@ async function signupController(req: Request, res: Response) {
         client.release();
         //logToFile(`📝 Create in Database time ${Date.now() - databaseInsertTime}ms`);
         if (result.rowCount === 0) {
-            //logToFile("⚠️ Email already in use.");
+            //logToFile("Email already in use.");
             res.status(400).json({ message: "Email in Use" });
             return;
         }
@@ -61,13 +61,13 @@ async function signupController(req: Request, res: Response) {
         (req.session as any).user = { id: result.rows[0].id , details: { name, email } };
         // await new Promise(resolve => req.session.save(resolve));
         // console.log(req.session.id);
-        //logToFile(`✅ Total Signup Time: ${Date.now() - startTime}ms`);
+        //logToFile(`Total Signup Time: ${Date.now() - startTime}ms`);
         const response = JSON.stringify({ message: "User Created Successfully" });
         res.setHeader('Content-Length', Buffer.byteLength(response));
         res.status(200).send(response);
     } catch (error: any) {
-        //logToFile(`❌ Database Error: ${error.message}`);
-        console.error("❌ Database Error:", error);
+        //logToFile(`Database Error: ${error.message}`);
+        console.error("Database Error:", error);
         res.status(500).json({ message: "Something went wrong" });
     }
 }

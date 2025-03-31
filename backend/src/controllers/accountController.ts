@@ -2,14 +2,21 @@ import { Request, Response } from "express";
 import { generateAccountNumber } from '../utility/accountGeneration';
 import  pool  from "../database/db";
 import { updateAccountCache } from "../config/redis/cache.service";
-import fs from "fs";
-import path from "path";
+// import fs from "fs";
+// import path from "path";
 
-const logFilePath = path.join(__dirname, "../logs/signup_timing.log");
+// const logFilePath = path.join(__dirname, "../logs/databaseLogs.log");
+// const logFilePath2 = path.join(__dirname, "../logs/redisLogs.log");
 
-function logToFile(message: string) {
-    fs.appendFileSync(logFilePath, `${new Date().toISOString()} - ${message}\n`);
-}
+// function logToFile(message: string) {
+//     fs.appendFileSync(logFilePath, `${new Date().toISOString()} - ${message}\n`);
+// }
+
+// function logToFile2(message: string) {
+//     fs.appendFileSync(logFilePath2, `${new Date().toISOString()} - ${message}\n`);
+// }
+
+
 
 async function accountController(req: Request, res: Response) {
     if (!req.session.user || req.session.user === null) {
@@ -19,23 +26,38 @@ async function accountController(req: Request, res: Response) {
 
     const newAccountNumber = generateAccountNumber();
     try {
-        const DatabaseAccountGenerate = Date.now();
+        //console.log(`Account Generation API hit`);
+        
         const query = `INSERT INTO "Account" (accountNumber, userId) VALUES ($1, $2) RETURNING accountNumber, balance`;
         const values = [newAccountNumber, req.session.user.id];
-        const result = await pool.query(query, values);
-        logToFile(`Database Account generate time: ${Date.now() - DatabaseAccountGenerate}ms`);
+    
+        let result;
+        try {
+            result = await pool.query(query, values);
+        } catch (dbError) {
+            console.error("Database Error:", dbError);
+            res.status(500).json({ message: "Database Error" });
+            return ;
+        }
+    
         const newAccount = result.rows[0];
+    
+        try {
+            await updateAccountCache(newAccount.accountNumber);
+        } catch (redisError) {
+            console.error("Redis Error:", redisError);
+        }
         res.status(200).json({
             message: "New Account Created Successfully",
             accountNumber: newAccountNumber,
             balance: newAccount.balance
-        });
-        updateAccountCache(newAccount.accountNumber);
-
+        }); 
     } catch (error) {
-        console.error("Error creating new account:", error);
+        console.error("Unexpected Error:", error);
         res.status(500).json({ message: "Internal Server Error" });
+        return; 
     }
+    
 }
 
 export default accountController;

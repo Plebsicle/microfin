@@ -29,12 +29,12 @@ function getRedisCluster() {
           "192.168.1.10:6379": { host: "localhost", port: 6387 }
         },
         enableReadyCheck: true,
-        enableOfflineQueue: true,
+        enableOfflineQueue: false, //change here
         maxRedirections: 16,
         retryDelayOnFailover: 2000,
         retryDelayOnClusterDown: 1000,
         clusterRetryStrategy: (times) => {
-          console.error(`⚠️ Redis Cluster retry #${times}`);
+          console.error(`Redis Cluster retry #${times}`);
           if (times > 5) return null; // Fail after 5 retries
           return Math.min(100 + times * 200, 2000);
         }
@@ -43,21 +43,21 @@ function getRedisCluster() {
     
     redisClusterInstance.on("connect", () => {
       if (!isConnected) {
-        console.log("✅ Connected to Redis Cluster");
+        console.log("Connected to Redis Cluster");
         isConnected = true;
       }
     });
     
     redisClusterInstance.on("error", (err) => {
-      console.error("❌ Redis Cluster Error:", err);
+      console.error("Redis Cluster Error:", err);
     });
     
     redisClusterInstance.on("node error", (err) => {
-      console.error("🚨 Redis Node Error:", err);
+      console.error("Redis Node Error:", err);
     });
     
     redisClusterInstance.on("end", () => {
-      console.error("❌ Redis Cluster Connection Lost");
+      console.error("Redis Cluster Connection Lost");
       isConnected = false;
     });
   }
@@ -67,15 +67,16 @@ function getRedisCluster() {
 
 const redisCluster = getRedisCluster();
 
-// ✅ Debug: Test Redis Write & Read
+// Debug: Test Redis Write & Read
 (async () => {
   try {
-    await redisCluster.set("test_key", "test_value", "EX", 60);
+    await redisCluster.set("test_key", "test_value", "EX", 300);
     const value = await redisCluster.get("test_key");
-    console.log("🔹 Test Key Value:", value);
+    console.log("Test Key Value:", value);
   } catch (error) {
-    console.error("❌ Redis Write Error:", error);
+    console.error("Redis Write Error:", error);
   }
 })();
 
 export { redisCluster };
+

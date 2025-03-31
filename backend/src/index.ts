@@ -14,7 +14,7 @@ const PORT = Number(process.env.PORT) || 8000;
 
 const app = express();
 app.use(express.json());
-app.use(cors()); // ✅ Fixed: Ensure CORS is correctly initialized
+app.use(cors());
 
 
 // Attach session middleware
@@ -24,7 +24,7 @@ app.use(sessionMiddleware);
 app.use(signupRoute);
 app.use(accountRoute);
 
-// ✅ Kafka Initialization (Uncomment if needed)
+
 async function initializeKafka() {
     try {
         await initializeProducer();
@@ -49,7 +49,7 @@ async function gracefulShutdown() {
     }
 }
 
-// ✅ Ensure Kafka starts if needed
+
 initializeKafka();
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);
