@@ -15,6 +15,15 @@ This project is a highly scalable financial application designed to handle high 
 ## Architecture Diagram
 ![Microfin Architecture](backend/src/assets/microfin_architecture.png)
 
+## Implementation Details
+In the implementation, the main server and workers are kept the same since running both on a local machine would introduce unnecessary complexity without any practical benefit in a development setup. Therefore, both components share the same environment.
+
+Kafka is used as a queue to ensure that transactions are processed sequentially. Transactions are hashed based on the account number to maintain order consistency and prevent conflicts in balance updates.
+
+To maintain the queue, Kafka is configured with an equal number of workers and partitions to ensure that transactions are processed in sequence. Kafka is set up with 3 brokers in a single cluster to provide fault tolerance and load distribution.
+
+Redis is configured using a cluster of 9 nodes, consisting of 3 masters and 2 slaves for each master. The number of nodes is configurable and can be adjusted based on system requirements.
+
 ## Installation
 
 ### Prerequisites
@@ -84,11 +93,6 @@ The results showed optimal performance even under heavy traffic with 100% succes
 |----------------------------------|-----------|
 | **Requests Per Second (RPS)**    | 3626.18/s |
 | **Average Response Time (ms)**  | 515.29     |
-| **Sign-in Success Rate**        | 100% (25,332 successful sign-ins) |
-| **Account Creation Success Rate**| 100% (50,664 successful account creations) |
-| **Deposit Success Rate**        | 100% (25,332 successful deposits) |
-| **Withdraw Success Rate**       | 100% (25,332 successful withdrawals) |
-| **Transfer Success Rate**       | 100% (25,332 successful transfers) |
 | **Account Duration (ms)**       | Avg: 553.57, p(90): 922.48, p(95): 1048.81 |
 | **Deposit Duration (ms)**       | Avg: 624.92, p(90): 1066.78, p(95): 1230.79 |
 | **Sign-in Duration (ms)**       | Avg: 457.01, p(90): 736.04, p(95): 1186.81 |
