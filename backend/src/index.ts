@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { initializeProducer, disconnectProducer } from "./config/kafka/producer";
 import { initializeConsumer, disconnectConsumer } from "./config/kafka/consumer";
+import setupMetrics from "./monitoring/metrics"; // Import metrics setup
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
@@ -19,7 +20,7 @@ app.use(cors());
 
 // Attach session middleware
 app.use(sessionMiddleware);
-
+setupMetrics(app);
 // API Routes
 app.use(signupRoute);
 app.use(accountRoute);

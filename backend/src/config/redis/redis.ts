@@ -13,11 +13,11 @@ function getRedisCluster() {
         { host: "localhost", port: 6380 }, // Master 3
       ],
       {
-        scaleReads: "master",
+        scaleReads: "slave",                                                                                              
         redisOptions: { 
           connectTimeout: 10000,
         },
-        natMap: {
+        natMap: {                                                                                                                                                                               
           "192.168.1.2:6379": { host: "localhost", port: 6379 },
           "192.168.1.11:6379": { host: "localhost", port: 6380 },
           "192.168.1.4:6379": { host: "localhost", port: 6381 },
