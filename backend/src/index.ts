@@ -51,7 +51,7 @@ async function gracefulShutdown() {
 }
 
 
-initializeKafka();
+// initializeKafka();
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);
 

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { generateAccountNumber } from '../utility/accountGeneration';
-import  pool  from "../database/db";
+import  {pool}  from "../database/db";
 import { updateAccountCache } from "../config/redis/cache.service";
 // import fs from "fs";
 // import path from "path";
