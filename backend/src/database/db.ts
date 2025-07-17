@@ -16,4 +16,4 @@ const pool = new Pool({
   query_timeout: 15000,
 });
 
-export default pool;
+export  {pool};

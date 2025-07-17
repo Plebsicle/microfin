@@ -1,5 +1,5 @@
 import { redisCluster } from './redis';
-import  pool  from '../../database/db';
+import  {pool}  from '../../database/db';
 
 export const getAccountFromCache = async (accountNumber : any) => {
     const cachedData = await redisCluster.get(`account:${accountNumber}`);

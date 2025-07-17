@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import pool from "../database/db"; // Import pg pool
+import {pool} from "../database/db"; // Import pg pool
 import { validateSignupDetails } from "../utility/zodValidation";
 import { hashPassword } from "../utility/passwordHash";
 // import fs from "fs";
@@ -39,17 +39,13 @@ async function signupController(req: Request, res: Response) {
 
         // Insert User into DB
         const databaseInsertTime = Date.now();
-        client = await pool.connect();
-        await client.query("BEGIN");
-        const result = await client.query(
+        const result = await pool.query(
             `INSERT INTO "User" (name, email, password) 
              VALUES ($1, $2, $3) 
              ON CONFLICT (email) DO NOTHING 
              RETURNING id`,
             [name, email, hashedPassword]
         );
-        await client.query("COMMIT");
-        client.release();
         //logToFile(`📝 Create in Database time ${Date.now() - databaseInsertTime}ms`);
         if (result.rowCount === 0) {
             //logToFile("Email already in use.");

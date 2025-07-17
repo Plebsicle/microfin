@@ -1,4 +1,4 @@
-import pool from "../database/db";
+import {pool} from "../database/db";
 import { Request, Response } from "express";
 import { validateSigninDetails } from "../utility/zodValidation";
 import { comparePassword } from "../utility/passwordHash";
@@ -19,6 +19,7 @@ import { comparePassword } from "../utility/passwordHash";
 
 async function signinController(req: Request, res: Response) {
     const { email, password } = req.body;
+    console.log('Controller pool:', pool);
     const validationResult = validateSigninDetails(email, password);
     if (!validationResult) {
         res.status(400).json({ message: "Invalid Input" });
@@ -28,7 +29,7 @@ async function signinController(req: Request, res: Response) {
         //console.log(`Signin API hit`);
         const userExistQuery = "SELECT * FROM \"User\" WHERE email = $1";
         const signinDatabaseTime = Date.now();
-        const { rows: users } = await pool.query(userExistQuery, [email]);
+        const { rows: users } = await pool.query(userExistQuery, [email]);   
         //logToFile(`Signin Database times : ${Date.now() - signinDatabaseTime}ms`);
         const userExist = users[0];
         if (!userExist) {
