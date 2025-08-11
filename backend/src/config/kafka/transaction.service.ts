@@ -1,7 +1,7 @@
 import { getProducer } from './producer';
 import { FINANCIAL_TOPIC } from './kafka';
 import { Transaction } from './transaction.model';
-import  pool  from '../../database/db';
+import  {pool}  from '../../database/db';
 
 export const publishTransaction = async (data: Transaction, key: string): Promise<boolean> => {
   try {
